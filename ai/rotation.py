@@ -26,7 +26,6 @@ class RotateModule:
 
     def tracking(self, drone_x, drone_y, center_x, center_y):
         pass
-        
 
     def difference_between_drone_and_center(self, drone_x, drone_y, center_x, center_y):
         """

@@ -1,11 +1,11 @@
 from camera import CameraModule
-from rotation import RotationModule
+from rotation import RotateModule
 
 
 
 if __name__=="__main__":
     camera = CameraModule()
-    rotation = RotationModule()
+    rotation = RotateModule()
     
     while True:
         """
@@ -19,22 +19,25 @@ if __name__=="__main__":
         x: 90 -> y: 45, -45
         """
         
-        while True:
-            
-            # get frame
-            frame = camera.process()
-            
-            # # send frame to ai
-            
-            
-            # #detect drone
-            # drone_is_detected = False
+        # get frame
+        frame = camera.process()
+        
+        # send frame to ai
+        
+        
+        # #detect drone
+        # drone_is_detected = False
 
-            # # start tracking if drone is detected
-            # if drone_is_detected:
-            #     self.tracking(drone_x, drone_y, center_x, center_y)
-            # else:
-            #     self.rotate_x(90)  # Rotate x-axis by 90 degrees
-            #     self.rotate_motors()
+        # # start tracking if drone is detected
+        # if drone_is_detected:
+        #     self.tracking(drone_x, drone_y, center_x, center_y)
+        # else:
+        #     self.rotate_x(90)  # Rotate x-axis by 90 degrees
+        #     self.rotate_motors()
+        
+        if frame is not None:         
+            frame = camera.interface(frame)
             
             camera.display_frame(frame)
+            
+                

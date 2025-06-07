@@ -39,9 +39,8 @@ class CameraModule:
     def process(self):
         frame = self.get_frame()
         frame = self.crop_frame(frame, 640, 640)
-        return frame
-        
-    
+        return frames
+
     def place_cursor(self, frame):
         cursor_size = int(50/2)
         # cursor looks like a 2 lines in the middle of the screen
@@ -76,7 +75,15 @@ class CameraModule:
             print("Unable to fetch frame for cropping.")
             return None
         
-            
+    def interface(self, frame):
+         # Convert to grayscale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        # Add interface
+        self.title_text(gray)    
+        gray = self.place_cursor(gray)
+        return gray
+                
     def test_processing(self):
         while True:
             # Check if the camera is colorful
@@ -84,10 +91,6 @@ class CameraModule:
             frame = self.crop_frame(frame, 640, 640) 
             
             if frame is not None:         
-                
-                # Here image goes to AI processing, but we are not using it now
-                   
-                    
                 # Convert to grayscale
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 
