@@ -15,12 +15,12 @@ while True:
         img_resp = urllib.request.urlopen(url, timeout=2)
         img_arr = np.array(bytearray(img_resp.read()), dtype=np.uint8)
         frame = cv2.imdecode(img_arr, -1)
-        
+
         # Display
         cv2.imshow("USB-C Camera", frame)
         if cv2.waitKey(1) == ord('q'):
             break
-            
+
     except Exception as e:
         print(f"Error: {e} - Reconnecting...")
         subprocess.run(["adb", "forward", "--remove-all"])  # Reset
