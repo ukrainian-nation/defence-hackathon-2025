@@ -6,6 +6,14 @@ import time
 
 
 class CameraModule:
+    """
+    A class to handle camera operations for a USB-C camera connected via ADB.
+    This class provides methods to fetch frames, check if the camera is colorful,
+    find contours in the frames, and display the frames.
+    The camera is expected to be connected to an Android device and the frames/
+    We are trying to find contours in the frames.
+    The camera is expected to be connected to an Android device and the frames
+    """
     
     def __init__(self):
         self.colorful = False # true is light and false is dark
