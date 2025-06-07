@@ -16,6 +16,7 @@ class CameraModule:
     """
     
     def __init__(self):
+        self.termo_vision = False # true is termo vision and false is normal camera
         self.colorful = False # true is light and false is dark
         self.url = "http://127.0.0.1:8080/shot.jpg"
         subprocess.run(["adb", "forward", "tcp:8080", "tcp:8080"])
@@ -48,7 +49,7 @@ class CameraModule:
             print("Unable to fetch frame for color check.")
     
     def find_conturs(self, frame):
-        if not self.colorful:
+        if not self.colorful and not self.termo_vision:
             frame = cv2.convertScaleAbs(frame, alpha=1.2, beta=30)  # Increase contrast and brightness
             
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
