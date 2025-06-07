@@ -17,7 +17,6 @@ class CameraModule:
     
     def __init__(self):
         self.termo_vision = False # true is termo vision and false is normal camera
-        self.colorful = False # true is light and false is dark
         self.url = "http://127.0.0.1:8080/shot.jpg"
         subprocess.run(["adb", "forward", "tcp:8080", "tcp:8080"])
     
@@ -36,38 +35,68 @@ class CameraModule:
             cv2.imshow("USB-C Camera", frame)
         else:
             return None
-        
-        
-    def check_colorful(self):
+   
+    def process(self):
         frame = self.get_frame()
+        frame = self.crop_frame(frame, 640, 640)
+        return frame
+        
+    
+    def place_cursor(self, frame):
+        cursor_size = int(50/2)
+        # cursor looks like a 2 lines in the middle of the screen
         if frame is not None:
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            brightness = np.mean(hsv[:, :, 2])  # Calculate the average brightness from the V channel
-            self.colorful = brightness > 100  # Threshold to determine if it's light or dark
-            print(f"Colorful: {self.colorful}, Brightness: {brightness}")
+            height, width = frame.shape[:2]
+            cv2.line(frame, (width // 2, height // 2 - cursor_size), (width // 2, height // 2 + cursor_size), (255, 255, 255), 3)
+            cv2.line(frame, (width // 2 - cursor_size, height // 2), (width // 2 + cursor_size, height // 2), (255, 255, 255), 3)
         else:
-            print("Unable to fetch frame for color check.")
+            print("Unable to fetch frame for cursor placement.")
+        return frame
     
-    def find_conturs(self, frame):
-        if not self.colorful and not self.termo_vision:
-            frame = cv2.convertScaleAbs(frame, alpha=1.2, beta=30)  # Increase contrast and brightness
+    def title_text(self, frame):
+        if frame is not None:
+            cv2.putText(frame, "Terminator 3000", (15, 60), cv2.FONT_HERSHEY_DUPLEX, 0.83, (255, 255, 255), 2)
+            cv2.putText(frame, "Version 1.0.0 (Hackathon edition)", (15, 25), cv2.FONT_HERSHEY_DUPLEX, 0.40, (255, 255, 255), 2)
+            self.display_frame(frame)
+        else:
+            print("Unable to fetch frame for text display.")
             
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        edged = cv2.Canny(blurred, 50, 150)
-        contours, _ = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        return contours
-    
-    
+    def crop_frame(self, frame, width, height):
+        """
+        Crop the frame to a specified width and height.
+        The cropping is done from the center of the frame.
+        """
+        if frame is not None:
+            h, w = frame.shape[:2]
+            start_x = (w - width) // 2
+            start_y = (h - height) // 2
+            cropped_frame = frame[start_y:start_y + height, start_x:start_x + width]
+            return cropped_frame
+        else:
+            print("Unable to fetch frame for cropping.")
+            return None
+        
+            
     def test_processing(self):
         while True:
-            self.check_colorful()
+            # Check if the camera is colorful
             frame = self.get_frame()
-            if frame is not None:
-                contours = self.find_conturs(frame)
-                for contour in contours:
-                    cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
-                self.display_frame(frame)
+            frame = self.crop_frame(frame, 640, 640) 
+            
+            if frame is not None:         
+                
+                # Here image goes to AI processing, but we are not using it now
+                   
+                    
+                # Convert to grayscale
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                
+                # Add interface
+                self.title_text(gray)    
+                gray = self.place_cursor(gray)
+                
+                # Display the processed frame
+                self.display_frame(gray)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
             else:

@@ -1,5 +1,5 @@
 import math
-
+import serial
 
 class RotateModule:
     """
@@ -13,64 +13,75 @@ class RotateModule:
         """
         We have 390 degrees rotation
         """
-        self.x_motor = None  # Placeholder for x-axis motor control
-        self.y_motor = None  # Placeholder for y-axis motor control
+        self.x_motor = 0  # Placeholder for x-axis motor control
+        self.y_motor = 0  # Placeholder for y-axis motor control
         pass
     
-    def scan(self):
+    def setup_basic_position(self):
         """
-        Scaning of the positions while cyclus.
-        When detects starting a traking of the object,
-        4 rotates by x-axis and 2 y-axis rotate on 1 rotate of x-axis.
-        Default position is x: 0, y: 0.
-        x: 90 -> y: 45, -45 -> 
-        x: 90 -> y: 45, -45 -> 
-        x: 90 -> y: 45, -45 -> 
-        x: 90 -> y: 45, -45
+        Set the initial position of the motors to 0 degrees.
+        This is the default position for the device.
         """
+        return 
+
+    def tracking(self, drone_x, drone_y, center_x, center_y):
         pass
+        
 
-        def difference_between_drone_and_center(self, drone_x, drone_y, center_x, center_y):
-            """
-            Calculate the difference between the drone's position and the center position.
-            This is used to determine how much to rotate the drone to face the center.
-            Returns a tuple of (diff_x, diff_y).
-            """
-            diff_x = center_x - drone_x
-            diff_y = center_y - drone_y
-            return diff_x, diff_y
+    def difference_between_drone_and_center(self, drone_x, drone_y, center_x, center_y):
+        """
+        Calculate the difference between the drone's position and the center position.
+        This is used to determine how much to rotate the drone to face the center.
+        Returns a tuple of (diff_x, diff_y).
+        """
+        diff_x =  drone_x - center_x
+        diff_y =  drone_y - center_y
+        return diff_x, diff_y
 
-        def calculate_rotation_angles(self, drone_x, drone_y, center_x, center_y):
-            """
-            Calculate the angles required to rotate the motors to align the drone with the center.
-            Returns a tuple of (angle_x, angle_y) in degrees.
-            """
-            diff_x, diff_y = self.difference_between_drone_and_center(drone_x, drone_y, center_x, center_y)
-            
-            # Assuming the screen coordinates are in pixels and the rotation angles are proportional
-            # to the difference in position, we calculate the angles using simple trigonometry.
-            
-            angle_x = math.degrees(math.atan2(diff_x, center_x))  # Rotation angle for x-axis
-            angle_y = math.degrees(math.atan2(diff_y, center_y))  # Rotation angle for y-axis
-            
-            return angle_x, angle_y
+    def calculate_rotation_angles(self, drone_x, drone_y, center_x, center_y):
+        """
+        Calculate the angles required to rotate the motors to align the drone with the center.
+        Returns a tuple of (angle_x, angle_y) in degrees.
+        """
+        diff_x, diff_y = self.difference_between_drone_and_center(drone_x, drone_y, center_x, center_y)
+        
+        # Assuming the screen coordinates are in pixels and the rotation angles are proportional
+        # to the difference in position, we calculate the angles using simple trigonometry.
+        
+        angle_x = math.degrees(math.atan2(diff_x, center_x))  # Rotation angle for x-axis
+        angle_y = math.degrees(math.atan2(diff_y, center_y))  # Rotation angle for y-axis
+        
+        return angle_x, angle_y
     
     def rotate_x(self, angle):
         """
         Rotate the device around the x-axis by the specified angle.
         The angle is in degrees.
         """
-        self.x_angle += angle
-        print(f"Rotating X-axis by {angle} degrees. Current angle: {self.x_angle} degrees.")
+        self.x_motor += angle
+        print(f"Rotating X-axis by {angle} degrees. Current angle: {self.rotate_x} degrees.")
         
     def rotate_y(self, angle):
         """
         Rotate the device around the y-axis by the specified angle.
         The angle is in degrees.
         """
-        self.y_angle += angle
-        print(f"Rotating Y-axis by {angle} degrees. Current angle: {self.y_angle} degrees.")
+        self.y_motor += angle
+        print(f"Rotating Y-axis by {angle} degrees. Current angle: {self.rotate_y} degrees.")
         
     def rotate_motors(self):
+        """
+        We can't rotate motors due to the 
+        """
         pass
         
+if __name__ == "__main__":
+    rotate_module = RotateModule()
+    rotate_module.rotate_x(30)
+    rotate_module.rotate_y(45)
+    rotate_module.rotate_motors()
+    print("Rotation complete.", rotate_module.x_motor, rotate_module.y_motor)
+    difference = rotate_module.difference_between_drone_and_center(120, 120, 200, 200) # screen 400x400 px and drone center is 120, 120
+    print(f"Difference between drone and center: {difference}")
+    angles = rotate_module.calculate_rotation_angles(120, 120, 200, 200)
+    print(f"Calculated rotation angles: {angles}")
