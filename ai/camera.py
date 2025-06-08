@@ -6,6 +6,7 @@ import time
 from ultralytics import YOLO 
 import struct
 
+CENTRAL_POINT = (320, 320)  # Assuming a 640x480 frame size for the camera
 
 class CameraModule:
     """
@@ -22,7 +23,7 @@ class CameraModule:
         self.termo_vision = False # true is termo vision and false is normal camera
         self.url = input("Write ipwithport default (127.0.0.1:8080): ")
         subprocess.run(["adb", "forward", "tcp:8080", "tcp:8080"])
-    
+
     def get_frame(self):
         try:
             if self.url == "":
@@ -43,16 +44,15 @@ class CameraModule:
         else:
             return None
    
-    def process(self):
+    def process(self) -> tuple:
         frame = self.get_frame()
         frame = self.crop_frame(frame, 640, 640)
         result = self.model(frame)[0]  # Get first result from YOLO
         
         if result is None or not result.boxes:
-            print("No detections found.")
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
-            return gray
+            return (gray, None)
         
         box = result.boxes[0]  # Get bounding boxes from the result
         x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box in pixel format
@@ -68,7 +68,7 @@ class CameraModule:
                 0.5, (0, 255, 0), 2)        
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
-        return (gray)
+        return (gray, (x1, y1, x2, y2))
 
         
     def place_cursor(self, frame):
@@ -105,7 +105,36 @@ class CameraModule:
             print("Unable to fetch frame for cropping.")
             return None
         
-    def interface(self, frame):
+    def arrow_place(self, frame, drone_x=None, drone_y=None):
+        """
+        Places an arrow from the center of the frame to the drone's position.
+        """
+        if frame is not None and drone_x is not None and drone_y is not None:
+            height, width = frame.shape[:2]
+            center_x, center_y = width // 2, height // 2
+            
+            # Calculate the weight point of the drone
+            weight_x = drone_x
+            weight_y = drone_y
+            
+            # Calculate the distance to the weight point
+            distance_x = weight_x - center_x
+            distance_y = weight_y - center_y
+            
+            # Scale the arrow length to 1/3 of the distance
+            arrow_x = center_x + int(distance_x / 3)
+            arrow_y = center_y + int(distance_y / 3)
+            
+            # Draw the arrow
+            cv2.line(frame, (center_x, center_y), (arrow_x, arrow_y), (255, 255, 255), 2)
+        else:
+            print("Unable to fetch frame or drone coordinates for arrow placement.")
+        return frame
+        
+        
+    def interface(self, frame, drone_x=None, drone_y=None):
+        if not drone_x is None and not drone_y is None:
+            frame = self.arrow_place(frame, drone_x, drone_y)
         self.title_text(frame)    
         frame = self.place_cursor(frame)
         return frame

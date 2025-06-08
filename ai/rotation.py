@@ -2,86 +2,123 @@ import math
 import serial
 import struct
 
+
 class RotateModule:
     """
-    RotateModule is a class that handles the rotation of a robot or device.
-    We have 2 motors that can rotate the device in x and y directions.
-    The rotation angle is specified in degrees.
-    The class provides methods to rotate the device and scan the surroundings.
+    Handles rotation of a 2-axis device via motors.
+    Useful for camera/gimbal tracking based on image position.
     """
-    
+
     def __init__(self):
         """
-        We have 390 degrees rotation
+        Initializes serial connection and motor parameters.
         """
-        self.x_motor = 0  # Placeholder for x-axis motor control
-        self.y_motor = 0  # Placeholder for y-axis motor control
-        pass
-    
+        try:
+            self.ser = serial.Serial('/dev/tty.usbserial-XXXX', 115200, timeout=0.1)  # Change this to your macOS port
+        except serial.SerialException as e:
+            print(f"Serial port error: {e}")
+            self.ser = None
+
+        self.ticks_per_rev = 90
+        self.deg_per_tick = 360.0 / self.ticks_per_rev
+        self.Kp = 2.0
+        self.Ki = 0.01
+        self.Kd = 0.05
+        self.x_motor = 0
+        self.y_motor = 0
+
+    def normalize_angle(self, angle):
+        """Wraps angle to 0–360."""
+        return angle % 360
+
+    @staticmethod
+    def angle_difference(target_angle, current_angle):
+        """Returns shortest angle difference in range -180 to 180."""
+        diff = (target_angle - current_angle + 180) % 360 - 180
+        return diff
+
+    def good_angle(self):
+        """Check if angles are within allowed range."""
+        if self.x_motor > 180 or self.x_motor < -180:
+            print("X motor angle out of range. Resetting to safe position.")
+            return False
+        if self.y_motor > 45 or self.y_motor < -90:
+            print("Y motor angle out of range. Resetting to safe position.")
+            return False
+        return True
+
     def setup_basic_position(self):
-        """
-        Set the initial position of the motors to 0 degrees.
-        This is the default position for the device.
-        """
-        return 
+        """Initialize motors to zero."""
+        self.x_motor = 0
+        self.y_motor = 0
+        print("Motors set to default position (0°, 0°)")
 
     def tracking(self, drone_x, drone_y, center_x, center_y):
-        pass
+        """Tracks object by calculating required angles and rotating motors."""
+        angle_x, angle_y = self.calculate_rotation_angles(drone_x, drone_y, center_x, center_y)
+        print(f"Tracking: rotating to ({angle_x:.2f}°, {angle_y:.2f}°)")
+        self.rotate_x(angle_x)
+        self.rotate_y(angle_y)
 
     def difference_between_drone_and_center(self, drone_x, drone_y, center_x, center_y):
-        """
-        Calculate the difference between the drone's position and the center position.
-        This is used to determine how much to rotate the drone to face the center.
-        Returns a tuple of (diff_x, diff_y).
-        """
-        diff_x =  drone_x - center_x
-        diff_y =  drone_y - center_y
-        return diff_x, diff_y
+        """Returns pixel difference between drone and center."""
+        return drone_x - center_x, drone_y - center_y
 
-    def calculate_rotation_angles(self, drone_x, drone_y, center_x, center_y):
-        """
-        Calculate the angles required to rotate the motors to align the drone with the center.
-        Returns a tuple of (angle_x, angle_y) in degrees.
-        """
-        diff_x, diff_y = self.difference_between_drone_and_center(drone_x, drone_y, center_x, center_y)
-        
-        # Assuming the screen coordinates are in pixels and the rotation angles are proportional
-        # to the difference in position, we calculate the angles using simple trigonometry.
-        
-        angle_x = math.degrees(math.atan2(diff_x, center_x))  # Rotation angle for x-axis
-        angle_y = math.degrees(math.atan2(diff_y, center_y))  # Rotation angle for y-axis
-        
+    def calculate_rotation_angles(self, drone_x, drone_y, center_x, center_y, image_width=640, image_height=640, fov_x=31.05, fov_y=22.1):
+        """Converts pixel offset to angular offset based on FoV."""
+        diff_x = drone_x - center_x
+        diff_y = drone_y - center_y
+
+        deg_per_px_x = fov_x / image_width
+        deg_per_px_y = fov_y / image_height
+
+        angle_x = diff_x * deg_per_px_x
+        angle_y = diff_y * deg_per_px_y
+
         return angle_x, angle_y
-    
+
     def rotate_x(self, angle):
-        """
-        Rotate the device around the x-axis by the specified angle.
-        The angle is in degrees.
-        """
+        """Rotates X motor by given angle if safe."""
         self.x_motor += angle
-        print(f"Rotating X-axis by {angle} degrees. Current angle: {self.rotate_x} degrees.")
-        
+        if not self.good_angle():
+            self.x_motor -= angle
+            print("X-axis rotation aborted.")
+        else:
+            print(f"Rotating X-axis by {angle:.2f}°, current X: {self.x_motor:.2f}°")
+            # You'd send angle to actual motor here via serial if desired
+
     def rotate_y(self, angle):
-        """
-        Rotate the device around the y-axis by the specified angle.
-        The angle is in degrees.
-        """
+        """Rotates Y motor by given angle if safe."""
         self.y_motor += angle
-        print(f"Rotating Y-axis by {angle} degrees. Current angle: {self.rotate_y} degrees.")
-        
+        if not self.good_angle():
+            self.y_motor -= angle
+            print("Y-axis rotation aborted.")
+        else:
+            print(f"Rotating Y-axis by {angle:.2f}°, current Y: {self.y_motor:.2f}°")
+            # You'd send angle to actual motor here via serial if desired
+
     def rotate_motors(self):
-        """
-        We can't rotate motors due to the 
-        """
-        pass
-        
+        """Placeholder to actually trigger motor commands."""
+        if self.ser:
+            # Here you’d convert angles to protocol messages, then send
+            # Example: self.ser.write(struct.pack('>2f', self.x_motor, self.y_motor))
+            print(f"Sending to motors: X={self.x_motor}°, Y={self.y_motor}°")
+        else:
+            print("Serial not connected. Skipping motor write.")
+
+
 if __name__ == "__main__":
     rotate_module = RotateModule()
     rotate_module.rotate_x(30)
     rotate_module.rotate_y(45)
     rotate_module.rotate_motors()
-    print("Rotation complete.", rotate_module.x_motor, rotate_module.y_motor)
-    difference = rotate_module.difference_between_drone_and_center(120, 120, 200, 200) # screen 400x400 px and drone center is 120, 120
-    print(f"Difference between drone and center: {difference}")
+
+    # Test difference and angle calculation
+    difference = rotate_module.difference_between_drone_and_center(120, 120, 200, 200)
+    print(f"Pixel difference: {difference}")
+
     angles = rotate_module.calculate_rotation_angles(120, 120, 200, 200)
     print(f"Calculated rotation angles: {angles}")
+
+    # Optional tracking example
+    rotate_module.tracking(120, 120, 200, 200)

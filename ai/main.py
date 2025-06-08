@@ -20,15 +20,24 @@ if __name__=="__main__":
         x: 90 -> y: 45, -45
         """
         
-        # get frame
-        frame = camera.process()
-        
-        # send frame to ai
-        
-        # #detect drone
+        # get frame and process it
+        (frame, result) = camera.process() # frame and (x1, y1, x2, y2)
+
+        # get Angle to rotate
+        if result is not None:
+            (rotate_x, rotate_y) = rotation.calculate_rotation_angles(
+                drone_x=abs(result[0]-result[2])/2+result[0], 
+                drone_y=abs(result[1]-result[3])/2+result[1], 
+                center_x=320, 
+                center_y=320
+            )
+            print(f"Rotate X: {rotate_x}, Rotate Y: {rotate_y}")
 
         # if frame is not None:   
-        frame = camera.interface(frame)
+        if result is None:
+            frame = camera.interface(frame)
+        else:
+            frame = camera.interface(frame, drone_x=abs(result[0]-result[2])/2+result[0], drone_y=abs(result[1]-result[3])/2+result[1])
         
         
         camera.display_frame(frame)
