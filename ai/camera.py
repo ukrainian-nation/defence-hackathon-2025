@@ -3,6 +3,8 @@ import subprocess
 import numpy as np
 import urllib.request
 import time
+from ultralytics import YOLO 
+import struct
 
 
 class CameraModule:
@@ -12,17 +14,22 @@ class CameraModule:
     find contours in the frames, and display the frames.
     The camera is expected to be connected to an Android device and the frames/
     We are trying to find contours in the frames.
-    The camera is expected to be connected to an Android device and the frames
+    The camera is expected to be connected to an Android device and the frames.
     """
     
     def __init__(self):
+        self.model = YOLO("../train/weights/best.pt")
         self.termo_vision = False # true is termo vision and false is normal camera
-        self.url = "http://127.0.0.1:8080/shot.jpg"
+        self.url = input("Write ipwithport default (127.0.0.1:8080): ")
         subprocess.run(["adb", "forward", "tcp:8080", "tcp:8080"])
     
     def get_frame(self):
         try:
-            img_resp = urllib.request.urlopen(self.url, timeout=2)
+            if self.url == "":
+                self.url = "127.0.0.1:8080"
+                
+            # Fetch the image from the camera URL
+            img_resp = urllib.request.urlopen("http://" + self.url + "/shot.jpg", timeout=2)
             img_arr = np.array(bytearray(img_resp.read()), dtype=np.uint8)
             frame = cv2.imdecode(img_arr, -1)
             return frame
@@ -39,8 +46,31 @@ class CameraModule:
     def process(self):
         frame = self.get_frame()
         frame = self.crop_frame(frame, 640, 640)
-        return frames
+        result = self.model(frame)[0]  # Get first result from YOLO
+        
+        if result is None or not result.boxes:
+            print("No detections found.")
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            
+            return gray
+        
+        box = result.boxes[0]  # Get bounding boxes from the result
+        x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box in pixel format
+        confidence = float(box.conf[0])
+        class_id = int(box.cls[0])
 
+        # Draw rectangle
+        cv2.rectangle(frame, (x1, y1), (x2, y2), color=(0, 255, 0), thickness=2)
+        
+        # Optionally draw label
+        label = f"Dron"
+        cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 
+                0.5, (0, 255, 0), 2)        
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        return (gray)
+
+        
     def place_cursor(self, frame):
         cursor_size = int(50/2)
         # cursor looks like a 2 lines in the middle of the screen
@@ -76,13 +106,9 @@ class CameraModule:
             return None
         
     def interface(self, frame):
-         # Convert to grayscale
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        # Add interface
-        self.title_text(gray)    
-        gray = self.place_cursor(gray)
-        return gray
+        self.title_text(frame)    
+        frame = self.place_cursor(frame)
+        return frame
                 
     def test_processing(self):
         while True:
@@ -90,7 +116,7 @@ class CameraModule:
             frame = self.get_frame()
             frame = self.crop_frame(frame, 640, 640) 
             
-            if frame is not None:         
+            if frame is not None:
                 # Convert to grayscale
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 

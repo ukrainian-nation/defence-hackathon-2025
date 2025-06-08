@@ -1,7 +1,8 @@
 from camera import CameraModule
 from rotation import RotateModule
-
-
+import time
+import cv2
+import struct
 
 if __name__=="__main__":
     camera = CameraModule()
@@ -24,20 +25,14 @@ if __name__=="__main__":
         
         # send frame to ai
         
-        
         # #detect drone
-        # drone_is_detected = False
 
-        # # start tracking if drone is detected
-        # if drone_is_detected:
-        #     self.tracking(drone_x, drone_y, center_x, center_y)
-        # else:
-        #     self.rotate_x(90)  # Rotate x-axis by 90 degrees
-        #     self.rotate_motors()
+        # if frame is not None:   
+        frame = camera.interface(frame)
         
-        if frame is not None:         
-            frame = camera.interface(frame)
-            
-            camera.display_frame(frame)
-            
-                
+        
+        camera.display_frame(frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    cv2.destroyAllWindows()
+    
